@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kredit Kalkulyator</title>
+<meta name="description" content="Annuitet va differensial kredit grafigi kalkulyatori">
+<meta name="theme-color" content="#0a0e1a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kredit">
+<link rel="manifest" id="pwa-manifest">
+<link rel="apple-touch-icon" id="apple-icon">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e1a;--surface:#111827;--card:#1a2235;
+  --accent:#00e5ff;--accent2:#7c3aed;--gold:#f59e0b;
+  --text:#e2e8f0;--muted:#64748b;--border:#1e293b;
+  --green:#10b981;--red:#f43f5e;
+}
+body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.glow-orb{position:fixed;width:500px;height:500px;border-radius:50%;filter:blur(120px);opacity:.12;pointer-events:none;z-index:0}
+.glow-orb.one{background:var(--accent);top:-100px;left:-100px}
+.glow-orb.two{background:var(--accent2);bottom:-100px;right:-100px}
+.container{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:40px 20px 80px}
+
+/* ── Header ── */
+header{text-align:center;margin-bottom:44px}
+.badge{display:inline-block;background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.3);color:var(--accent);font-family:'Space Mono',monospace;font-size:11px;letter-spacing:3px;padding:6px 16px;border-radius:100px;margin-bottom:20px}
+h1{font-size:clamp(26px,5vw,46px);font-weight:800;line-height:1.1;background:linear-gradient(135deg,#fff 0%,var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px}
+.subtitle{color:var(--muted);font-size:14px;font-weight:300}
+
+/* ── Section tabs (main nav) ── */
+.main-nav{display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:5px;margin-bottom:32px;width:fit-content}
+.main-tab{padding:12px 28px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .2s;letter-spacing:.5px}
+.main-tab.active{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff}
+
+/* ── Section panels ── */
+.section-panel{display:none}
+.section-panel.active{display:block;animation:fadeUp .35s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Input card ── */
+.input-panel{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:30px;margin-bottom:28px;position:relative;overflow:hidden}
+.input-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent2),var(--accent))}
+.panel-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-family:'Space Mono',monospace;margin-bottom:20px}
+
+/* ── Sub-tabs (annuitet/differensial) ── */
+.sub-tabs{display:flex;gap:6px;background:var(--surface);border-radius:10px;padding:4px;width:fit-content;margin-bottom:20px}
+.sub-tab{padding:8px 18px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .2s}
+.sub-tab.active{background:var(--accent);color:#000}
+
+.inputs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px;margin-bottom:22px}
+.field{display:flex;flex-direction:column;gap:7px}
+label{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-family:'Space Mono',monospace}
+.input-wrap{position:relative}
+input[type="number"],select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:11px;color:var(--text);font-family:'Space Mono',monospace;font-size:15px;padding:13px 46px 13px 14px;outline:none;transition:border-color .2s,box-shadow .2s;-moz-appearance:textfield;appearance:none}
+input[type="number"]::-webkit-inner-spin-button{display:none}
+input[type="number"]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,255,.1)}
+.unit{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);pointer-events:none}
+
+.btn-calc{width:100%;background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:13px;color:#fff;font-family:'Sora',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;padding:15px;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.btn-calc:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,229,255,.2)}
+.btn-calc:active{transform:translateY(0)}
+
+/* ── Stat cards ── */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px;margin-bottom:28px;animation:fadeUp .4s ease}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:15px;padding:18px;text-align:center;position:relative;overflow:hidden;transition:transform .2s}
+.stat-card:hover{transform:translateY(-3px)}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px}
+.stat-card.c-blue::after{background:var(--accent)}
+.stat-card.c-purple::after{background:var(--accent2)}
+.stat-card.c-gold::after{background:var(--gold)}
+.stat-card.c-green::after{background:var(--green)}
+.stat-card.c-red::after{background:var(--red)}
+.stat-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:9px}
+.stat-value{font-size:18px;font-weight:800;font-family:'Space Mono',monospace;line-height:1;margin-bottom:4px}
+.stat-value.c-blue{color:var(--accent)}
+.stat-value.c-purple{color:var(--accent2)}
+.stat-value.c-gold{color:var(--gold)}
+.stat-value.c-green{color:var(--green)}
+.stat-value.c-red{color:var(--red)}
+.stat-sub{font-size:10px;color:var(--muted)}
+
+/* ── Comparison box (maosh section) ── */
+.compare-box{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:24px;margin-bottom:28px;animation:fadeUp .4s ease}
+.compare-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-family:'Space Mono',monospace;margin-bottom:16px}
+.compare-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(30,41,59,.6)}
+.compare-row:last-child{border-bottom:none}
+.compare-label{font-size:12px;color:var(--muted)}
+.compare-val{font-family:'Space Mono',monospace;font-size:14px;font-weight:700}
+.debt-bar-wrap{margin-top:14px}
+.debt-bar-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:6px}
+.debt-bar{height:10px;background:var(--surface);border-radius:10px;overflow:hidden}
+.debt-fill{height:100%;border-radius:10px;transition:width .6s ease}
+
+/* ── Chart ── */
+.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:28px;animation:fadeUp .45s ease}
+.chart-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-family:'Space Mono',monospace;margin-bottom:18px}
+.chart-legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace}
+.legend-dot{width:10px;height:10px;border-radius:3px}
+
+/* ── Table ── */
+.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:18px;overflow:hidden;animation:fadeUp .5s ease;margin-bottom:8px}
+.table-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px}
+.table-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-family:'Space Mono',monospace}
+.search-input{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;padding:8px 12px;outline:none;width:160px}
+.search-input:focus{border-color:var(--accent)}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{background:var(--surface);padding:12px 14px;font-size:9px;font-family:'Space Mono',monospace;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-align:right;border-bottom:1px solid var(--border);white-space:nowrap}
+thead th:first-child{text-align:center}
+tbody tr{border-bottom:1px solid rgba(30,41,59,.5);transition:background .15s}
+tbody tr:hover{background:rgba(0,229,255,.03)}
+tbody tr.hl{background:rgba(0,229,255,.05)}
+td{padding:12px 14px;font-size:12px;font-family:'Space Mono',monospace;text-align:right;white-space:nowrap}
+td:first-child{text-align:center;color:var(--muted);font-size:10px}
+.td-pay{color:var(--accent);font-weight:700}
+.td-pr{color:var(--green)}
+.td-int{color:var(--red)}
+.progress-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.progress-bar{height:4px;width:70px;background:var(--border);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:4px}
+.pagination{display:flex;align-items:center;justify-content:center;gap:8px;padding:18px;border-top:1px solid var(--border)}
+.page-btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;padding:7px 14px;cursor:pointer;transition:all .2s}
+.page-btn:hover,.page-btn.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.page-btn:disabled{opacity:.3;cursor:default}
+.page-info{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace}
+
+/* ── Maosh bo'limi - kredit imkoniyati ── */
+.eligibility-result{animation:fadeUp .4s ease}
+.max-kredit-card{background:linear-gradient(135deg,rgba(124,58,237,.15),rgba(0,229,255,.1));border:1px solid rgba(0,229,255,.25);border-radius:18px;padding:28px;text-align:center;margin-bottom:24px}
+.max-kredit-label{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:10px}
+.max-kredit-value{font-size:clamp(28px,5vw,44px);font-weight:800;font-family:'Space Mono',monospace;background:linear-gradient(135deg,#fff,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+.max-kredit-sub{font-size:12px;color:var(--muted)}
+
+.hidden{display:none}
+.empty-state{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty-icon{font-size:44px;margin-bottom:10px}
+.empty-text{font-size:13px}
+
+.section-divider{display:flex;align-items:center;gap:12px;margin:40px 0 32px}
+.divider-line{flex:1;height:1px;background:var(--border)}
+.divider-text{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-family:'Space Mono',monospace;white-space:nowrap}
+
+@media(max-width:600px){
+  .inputs-grid{grid-template-columns:1fr 1fr}
+  .stat-value{font-size:15px}
+  .main-tab{padding:10px 16px;font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="glow-orb one"></div>
+<div class="glow-orb two"></div>
+
+<div class="container">
+  <header>
+    <div class="badge">KREDIT KALKULYATOR</div>
+    <h1>Kredit Grafigi</h1>
+    <p class="subtitle">Annuitet · Differensial · Maosh bo'yicha hisoblash</p>
+  </header>
+
+  <!-- Main Navigation -->
+  <div style="display:flex;justify-content:center;margin-bottom:36px">
+    <div class="main-nav">
+      <button class="main-tab active" onclick="switchSection('schedule')">📊 Kredit Grafigi</button>
+      <button class="main-tab" onclick="switchSection('eligibility')">💰 Kredit Imkoniyati</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SECTION 1: KREDIT GRAFIGI
+  ══════════════════════════════════════ -->
+  <div class="section-panel active" id="sec-schedule">
+
+    <div class="input-panel">
+      <div class="panel-title">📋 Kredit parametrlari</div>
+
+      <!-- Annuitet / Differensial -->
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px">
+        <span style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;letter-spacing:1px">TO'LOV TURI:</span>
+        <div class="sub-tabs">
+          <button class="sub-tab active" onclick="setPayType('annuitet')" id="pt-ann">Annuitet</button>
+          <button class="sub-tab" onclick="setPayType('diff')" id="pt-diff">Differensial</button>
+        </div>
+      </div>
+
+      <!-- Input mode -->
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px">
+        <span style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;letter-spacing:1px">KIRISH TURI:</span>
+        <div class="sub-tabs">
+          <button class="sub-tab active" onclick="setInputMode('sum')" id="im-sum">Kredit summasi</button>
+          <button class="sub-tab" onclick="setInputMode('payment')" id="im-pay">Oylik to'lov</button>
+        </div>
+      </div>
+
+      <div class="inputs-grid">
+        <div class="field" id="f-loanAmount">
+          <label>Kredit summasi</label>
+          <div class="input-wrap">
+            <input type="number" id="loanAmount" value="10000000" placeholder="10 000 000">
+            <span class="unit">so'm</span>
+          </div>
+        </div>
+        <div class="field hidden" id="f-monthlyPay">
+          <label>Oylik to'lov</label>
+          <div class="input-wrap">
+            <input type="number" id="monthlyPayInput" value="600000" placeholder="600 000">
+            <span class="unit">so'm</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Yillik foiz stavkasi</label>
+          <div class="input-wrap">
+            <input type="number" id="annualRate" value="24" step="0.1" placeholder="24">
+            <span class="unit">%</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Muddat</label>
+          <div class="input-wrap">
+            <input type="number" id="termMonths" value="24" min="1" max="360" placeholder="24">
+            <span class="unit">oy</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Oylik maosh (ixtiyoriy)</label>
+          <div class="input-wrap">
+            <input type="number" id="salaryS" placeholder="3 000 000">
+            <span class="unit">so'm</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-calc" onclick="calcSchedule()">⚡ GRAFIK HISOBLASH</button>
+    </div>
+
+    <!-- Results -->
+    <div id="schedResults" class="hidden">
+      <div class="summary-grid" id="summaryGrid"></div>
+
+      <div class="chart-wrap">
+        <div class="chart-title">📈 To'lov tarkibi dinamikasi</div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Asosiy qarz</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Foiz</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Qoldiq (o'ng o'q)</div>
+        </div>
+        <canvas id="schedChart" height="200"></canvas>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header">
+          <span class="table-title">📋 To'lov jadvali</span>
+          <input class="search-input" type="number" id="searchMonth" placeholder="Oy raqami..." oninput="filterTable()">
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Oy</th>
+                <th>Oylik to'lov</th>
+                <th>Asosiy qarz</th>
+                <th>Foiz</th>
+                <th>Qoldiq</th>
+                <th>Bajarildi</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+
+    <div id="emptyS" class="empty-state">
+      <div class="empty-icon">🏦</div>
+      <div class="empty-text">Ma'lumotlarni kiriting va hisoblashni boshlang</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SECTION 2: KREDIT IMKONIYATI
+  ══════════════════════════════════════ -->
+  <div class="section-panel" id="sec-eligibility">
+
+    <div class="input-panel">
+      <div class="panel-title">💼 Maosh bo'yicha kredit imkoniyati</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6">
+        Qarz yuki <span style="color:var(--gold);font-weight:700">50%</span> dan oshmasligi kerak. Oylik to'lov maoshingizning yarmidan ko'p bo'lmasligi lozim.
+      </p>
+
+      <div class="inputs-grid">
+        <div class="field">
+          <label>Oylik maosh (sof)</label>
+          <div class="input-wrap">
+            <input type="number" id="eSalary" value="5000000" placeholder="5 000 000">
+            <span class="unit">so'm</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Yillik foiz stavkasi</label>
+          <div class="input-wrap">
+            <input type="number" id="eRate" value="24" step="0.1" placeholder="24">
+            <span class="unit">%</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Kredit muddati</label>
+          <div class="input-wrap">
+            <input type="number" id="eTerm" value="24" min="1" max="360" placeholder="24">
+            <span class="unit">oy</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Qarz yuki chegarasi</label>
+          <div class="input-wrap">
+            <input type="number" id="eDebtPct" value="50" min="1" max="80" placeholder="50">
+            <span class="unit">%</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-calc" onclick="calcEligibility()">🔍 IMKONIYATNI HISOBLASH</button>
+    </div>
+
+    <div id="eligResults" class="hidden eligibility-result">
+      <!-- Max kredit -->
+      <div class="max-kredit-card">
+        <div class="max-kredit-label">Maksimal kredit miqdori</div>
+        <div class="max-kredit-value" id="eMaxLoan">—</div>
+        <div class="max-kredit-sub" id="eMaxLoanSub"></div>
+      </div>
+
+      <!-- Stats -->
+      <div class="summary-grid" id="eligSummary"></div>
+
+      <!-- Debt bar -->
+      <div class="compare-box">
+        <div class="compare-title">📊 Qarz yuki tahlili</div>
+        <div class="compare-row">
+          <span class="compare-label">Oylik maosh</span>
+          <span class="compare-val" style="color:var(--green)" id="eShowSalary"></span>
+        </div>
+        <div class="compare-row">
+          <span class="compare-label">Maksimal oylik to'lov (50%)</span>
+          <span class="compare-val" style="color:var(--accent)" id="eMaxPay"></span>
+        </div>
+        <div class="compare-row">
+          <span class="compare-label">Qolgan erkin mablag'</span>
+          <span class="compare-val" style="color:var(--gold)" id="eFree"></span>
+        </div>
+
+        <div class="debt-bar-wrap">
+          <div class="debt-bar-label">
+            <span>0%</span>
+            <span id="eDebtPctLabel" style="color:var(--accent)"></span>
+            <span>100%</span>
+          </div>
+          <div class="debt-bar">
+            <div class="debt-fill" id="eDebtBarFill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Different muddat taqqoslash -->
+        <div style="margin-top:20px">
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:12px">TURLI MUDDATLARDA KREDIT IMKONIYATI</div>
+          <div id="termComparison"></div>
+        </div>
+      </div>
+
+      <!-- Chart for eligibility -->
+      <div class="chart-wrap">
+        <div class="chart-title">📈 Kredit grafigi (annuitet)</div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Asosiy qarz</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Foiz</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Qoldiq</div>
+        </div>
+        <canvas id="eligChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <div id="emptyE" class="empty-state">
+      <div class="empty-icon">💳</div>
+      <div class="empty-text">Maosh va shartlarni kiriting</div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+/* ─────────────── STATE ─────────────── */
+let scheduleData = [];
+let currentPage = 1;
+const rowsPerPage = 12;
+let schedChart = null;
+let eligChart  = null;
+let payType    = 'annuitet'; // 'annuitet' | 'diff'
+let inputMode  = 'sum';      // 'sum' | 'payment'
+
+/* ─────────────── UTILS ─────────────── */
+const fmt = n => Math.round(n).toLocaleString('uz-UZ');
+const fmtM = n => fmt(n) + " so'm";
+
+/* ─────────────── SECTION SWITCH ─────────────── */
+function switchSection(s) {
+  document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('sec-' + s).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+/* ─────────────── PAY TYPE (annuitet/diff) ─────────────── */
+function setPayType(t) {
+  payType = t;
+  document.getElementById('pt-ann').classList.toggle('active', t === 'annuitet');
+  document.getElementById('pt-diff').classList.toggle('active', t === 'diff');
+  // Differensialda "oylik to'lov" kirish rejimi yo'q
+  if (t === 'diff' && inputMode === 'payment') setInputMode('sum');
+  document.getElementById('im-pay').disabled = (t === 'diff');
+  document.getElementById('im-pay').style.opacity = (t === 'diff') ? '0.35' : '1';
+}
+
+/* ─────────────── INPUT MODE ─────────────── */
+function setInputMode(m) {
+  inputMode = m;
+  document.getElementById('im-sum').classList.toggle('active', m === 'sum');
+  document.getElementById('im-pay').classList.toggle('active', m === 'payment');
+  document.getElementById('f-loanAmount').classList.toggle('hidden', m !== 'sum');
+  document.getElementById('f-monthlyPay').classList.toggle('hidden', m !== 'payment');
+}
+
+/* ─────────────── BUILD ANNUITET SCHEDULE ─────────────── */
+function buildAnnuitet(loanAmount, r, termMonths) {
+  const pmt = r === 0
+    ? loanAmount / termMonths
+    : loanAmount * r * Math.pow(1+r, termMonths) / (Math.pow(1+r, termMonths) - 1);
+  const rows = [];
+  let balance = loanAmount;
+  for (let i = 1; i <= termMonths; i++) {
+    const interest   = balance * r;
+    const principal  = pmt - interest;
+    balance = Math.max(0, balance - principal);
+    rows.push({ month: i, payment: pmt, principal, interest, balance,
+      paidPct: Math.round(i / termMonths * 100) });
+  }
+  return rows;
+}
+
+/* ─────────────── BUILD DIFFERENSIAL SCHEDULE ─────────────── */
+function buildDiff(loanAmount, r, termMonths) {
+  const principalPerMonth = loanAmount / termMonths;
+  const rows = [];
+  let balance = loanAmount;
+  for (let i = 1; i <= termMonths; i++) {
+    const interest = balance * r;
+    const payment  = principalPerMonth + interest;
+    balance = Math.max(0, balance - principalPerMonth);
+    rows.push({ month: i, payment, principal: principalPerMonth, interest, balance,
+      paidPct: Math.round(i / termMonths * 100) });
+  }
+  return rows;
+}
+
+/* ─────────────── CALC SCHEDULE ─────────────── */
+function calcSchedule() {
+  const annualRate  = parseFloat(document.getElementById('annualRate').value);
+  const termMonths  = parseInt(document.getElementById('termMonths').value);
+  const salary      = parseFloat(document.getElementById('salaryS').value) || 0;
+  if (!annualRate || !termMonths) { alert("Barcha maydonlarni to'ldiring!"); return; }
+
+  const r = annualRate / 100 / 12;
+  let loanAmount;
+
+  if (inputMode === 'sum') {
+    loanAmount = parseFloat(document.getElementById('loanAmount').value);
+    if (!loanAmount) { alert("Kredit summasini kiriting!"); return; }
+  } else {
+    // annuitet only
+    const pmt = parseFloat(document.getElementById('monthlyPayInput').value);
+    if (!pmt) { alert("Oylik to'lovni kiriting!"); return; }
+    loanAmount = r === 0 ? pmt * termMonths
+      : pmt * (Math.pow(1+r, termMonths) - 1) / (r * Math.pow(1+r, termMonths));
+  }
+
+  scheduleData = payType === 'annuitet'
+    ? buildAnnuitet(loanAmount, r, termMonths)
+    : buildDiff(loanAmount, r, termMonths);
+
+  const totalInterest = scheduleData.reduce((s, d) => s + d.interest, 0);
+  const totalPaid     = scheduleData.reduce((s, d) => s + d.payment, 0);
+  const firstPay      = scheduleData[0].payment;
+  const lastPay       = scheduleData[scheduleData.length - 1].payment;
+  const debtLoad      = salary > 0 ? (firstPay / salary * 100) : null;
+
+  /* Summary cards */
+  const sg = document.getElementById('summaryGrid');
+  const isOver = debtLoad && debtLoad > 50;
+  sg.innerHTML = `
+    <div class="stat-card c-blue">
+      <div class="stat-label">Kredit summasi</div>
+      <div class="stat-value c-blue">${fmt(loanAmount)}</div>
+      <div class="stat-sub">so'm</div>
+    </div>
+    <div class="stat-card c-purple">
+      <div class="stat-label">${payType==='annuitet'?'Oylik to\'lov':'1-oy to\'lov'}</div>
+      <div class="stat-value c-purple">${fmt(firstPay)}</div>
+      <div class="stat-sub">so'm / oy</div>
+    </div>
+    ${payType==='diff' ? `<div class="stat-card c-blue" style="--accent:#4f9eff">
+      <div class="stat-label">Oxirgi oy to'lov</div>
+      <div class="stat-value" style="color:#4f9eff">${fmt(lastPay)}</div>
+      <div class="stat-sub">so'm / oy</div>
+    </div>` : ''}
+    <div class="stat-card c-gold">
+      <div class="stat-label">Jami foiz</div>
+      <div class="stat-value c-gold">${fmt(totalInterest)}</div>
+      <div class="stat-sub">so'm</div>
+    </div>
+    <div class="stat-card c-green">
+      <div class="stat-label">Jami to'lov</div>
+      <div class="stat-value c-green">${fmt(totalPaid)}</div>
+      <div class="stat-sub">so'm</div>
+    </div>
+    ${debtLoad ? `
+    <div class="stat-card ${isOver?'c-red':'c-green'}">
+      <div class="stat-label">Qarz yuki</div>
+      <div class="stat-value ${isOver?'c-red':'c-green'}">${debtLoad.toFixed(1)}%</div>
+      <div class="stat-sub">${isOver?'⚠️ Yuqori (>50%)':'✅ Normal'}</div>
+    </div>` : ''}
+  `;
+
+  drawSchedChart();
+  currentPage = 1;
+  renderTable(scheduleData);
+
+  document.getElementById('schedResults').classList.remove('hidden');
+  document.getElementById('emptyS').classList.add('hidden');
+  document.getElementById('schedResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ─────────────── DRAW SCHED CHART ─────────────── */
+function drawSchedChart() {
+  const labels = scheduleData.map(d => d.month);
+  const ctx = document.getElementById('schedChart').getContext('2d');
+  if (schedChart) schedChart.destroy();
+
+  schedChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label:'Asosiy qarz', data: scheduleData.map(d=>Math.round(d.principal)),
+          backgroundColor:'rgba(16,185,129,.75)', borderRadius:3, stack:'a' },
+        { label:'Foiz', data: scheduleData.map(d=>Math.round(d.interest)),
+          backgroundColor:'rgba(244,63,94,.75)', borderRadius:3, stack:'a' },
+        { label:'Qoldiq', data: scheduleData.map(d=>Math.round(d.balance)),
+          type:'line', borderColor:'#00e5ff', backgroundColor:'rgba(0,229,255,.04)',
+          borderWidth:2, pointRadius:0, yAxisID:'y1', fill:true, tension:.4 }
+      ]
+    },
+    options: chartOptions()
+  });
+}
+
+function chartOptions() {
+  return {
+    responsive:true,
+    interaction:{ mode:'index', intersect:false },
+    plugins:{
+      legend:{ display:false },
+      tooltip:{ callbacks:{ label: c => ` ${c.dataset.label}: ${fmt(c.raw)} so'm` } }
+    },
+    scales:{
+      x:{ stacked:true, grid:{color:'rgba(255,255,255,.04)'},
+          ticks:{color:'#475569',font:{family:'Space Mono',size:10},maxTicksLimit:12} },
+      y:{ stacked:true, grid:{color:'rgba(255,255,255,.04)'},
+          ticks:{color:'#475569',font:{family:'Space Mono',size:10},callback:v=>fmt(v)} },
+      y1:{ position:'right', grid:{drawOnChartArea:false},
+           ticks:{color:'#00e5ff',font:{family:'Space Mono',size:10},callback:v=>fmt(v)} }
+    }
+  };
+}
+
+/* ─────────────── TABLE ─────────────── */
+function filterTable() {
+  const val = document.getElementById('searchMonth').value;
+  if (!val) { renderTable(scheduleData); return; }
+  renderTable(scheduleData.filter(d => d.month === parseInt(val)), true);
+}
+
+function renderTable(data, noPage=false) {
+  const body = document.getElementById('tableBody');
+  const total = Math.ceil(data.length / rowsPerPage);
+  const start = noPage ? 0 : (currentPage-1)*rowsPerPage;
+  const slice = data.slice(start, start + (noPage ? data.length : rowsPerPage));
+
+  body.innerHTML = slice.map(d => `
+    <tr class="${d.month%6===0?'hl':''}">
+      <td>${d.month}</td>
+      <td class="td-pay">${fmt(d.payment)}</td>
+      <td class="td-pr">${fmt(d.principal)}</td>
+      <td class="td-int">${fmt(d.interest)}</td>
+      <td>${fmt(d.balance)}</td>
+      <td>
+        <div class="progress-wrap">
+          <span style="font-size:10px;color:#64748b">${d.paidPct}%</span>
+          <div class="progress-bar"><div class="progress-fill" style="width:${d.paidPct}%"></div></div>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  if (!noPage) renderPagination(total);
+}
+
+function renderPagination(total) {
+  const p = document.getElementById('pagination');
+  if (total <= 1) { p.innerHTML = ''; return; }
+  p.innerHTML = `
+    <button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>
+    <span class="page-info">${currentPage} / ${total}</span>
+    <button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===total?'disabled':''}>›</button>
+  `;
+}
+function goPage(p) {
+  const total = Math.ceil(scheduleData.length / rowsPerPage);
+  if (p<1||p>total) return;
+  currentPage = p;
+  renderTable(scheduleData);
+}
+
+/* ─────────────── ELIGIBILITY ─────────────── */
+function calcEligibility() {
+  const salary   = parseFloat(document.getElementById('eSalary').value);
+  const rate     = parseFloat(document.getElementById('eRate').value);
+  const term     = parseInt(document.getElementById('eTerm').value);
+  const debtPct  = parseFloat(document.getElementById('eDebtPct').value) || 50;
+  if (!salary||!rate||!term) { alert("Barcha maydonlarni to'ldiring!"); return; }
+
+  const r   = rate / 100 / 12;
+  const maxPmt = salary * (debtPct / 100);
+
+  // Annuitet formula inverse: PV = PMT * [(1+r)^n - 1] / [r * (1+r)^n]
+  const maxLoan = r === 0
+    ? maxPmt * term
+    : maxPmt * (Math.pow(1+r,term)-1) / (r * Math.pow(1+r,term));
+
+  const freeMoney = salary - maxPmt;
+
+  /* Header */
+  document.getElementById('eMaxLoan').textContent = fmtM(maxLoan);
+  document.getElementById('eMaxLoanSub').textContent =
+    `Oylik to'lov: ${fmtM(maxPmt)} | Muddat: ${term} oy | Foiz: ${rate}%`;
+
+  /* Summary */
+  const es = document.getElementById('eligSummary');
+  const totalInt = maxPmt * term - maxLoan;
+  const totalPaid = maxPmt * term;
+  es.innerHTML = `
+    <div class="stat-card c-blue">
+      <div class="stat-label">Max kredit</div>
+      <div class="stat-value c-blue">${fmt(maxLoan)}</div>
+      <div class="stat-sub">so'm</div>
+    </div>
+    <div class="stat-card c-purple">
+      <div class="stat-label">Oylik to'lov</div>
+      <div class="stat-value c-purple">${fmt(maxPmt)}</div>
+      <div class="stat-sub">so'm / oy (${debtPct}%)</div>
+    </div>
+    <div class="stat-card c-gold">
+      <div class="stat-label">Jami foiz</div>
+      <div class="stat-value c-gold">${fmt(totalInt)}</div>
+      <div class="stat-sub">so'm</div>
+    </div>
+    <div class="stat-card c-green">
+      <div class="stat-label">Jami to'lov</div>
+      <div class="stat-value c-green">${fmt(totalPaid)}</div>
+      <div class="stat-sub">so'm</div>
+    </div>
+  `;
+
+  /* Debt bar */
+  document.getElementById('eShowSalary').textContent = fmtM(salary);
+  document.getElementById('eMaxPay').textContent = fmtM(maxPmt);
+  document.getElementById('eFree').textContent = fmtM(freeMoney);
+  document.getElementById('eDebtPctLabel').textContent = debtPct + '%';
+  const fillColor = debtPct > 60 ? 'var(--red)' : debtPct > 40 ? 'var(--gold)' : 'var(--green)';
+  document.getElementById('eDebtBarFill').style.width = Math.min(debtPct, 100) + '%';
+  document.getElementById('eDebtBarFill').style.background = fillColor;
+
+  /* Term comparison table */
+  const terms = [6,12,18,24,36,48,60];
+  let tcHtml = '';
+  terms.forEach(t => {
+    const pmt2 = r === 0 ? maxLoan/t
+      : maxLoan * r * Math.pow(1+r,t) / (Math.pow(1+r,t)-1);
+    // What max loan for this term?
+    const ml2 = r === 0 ? maxPmt*t
+      : maxPmt * (Math.pow(1+r,t)-1) / (r * Math.pow(1+r,t));
+    const isSelected = t === term;
+    tcHtml += `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(30,41,59,.5);">
+        <span style="font-family:'Space Mono',monospace;font-size:12px;color:${isSelected?'var(--accent)':'var(--muted)'};font-weight:${isSelected?700:400}">${t} oy${isSelected?' ◀':''}</span>
+        <span style="font-family:'Space Mono',monospace;font-size:13px;color:var(--green)">${fmt(ml2)} so'm</span>
+        <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted)">${fmt(pmt2)}/oy</span>
+      </div>
+    `;
+  });
+  document.getElementById('termComparison').innerHTML = tcHtml;
+
+  /* Eligibility chart */
+  const eData = buildAnnuitet(maxLoan, r, term);
+  const ectx = document.getElementById('eligChart').getContext('2d');
+  if (eligChart) eligChart.destroy();
+
+  eligChart = new Chart(ectx, {
+    type: 'bar',
+    data: {
+      labels: eData.map(d=>d.month),
+      datasets: [
+        { label:'Asosiy qarz', data:eData.map(d=>Math.round(d.principal)),
+          backgroundColor:'rgba(16,185,129,.75)', borderRadius:3, stack:'a' },
+        { label:'Foiz', data:eData.map(d=>Math.round(d.interest)),
+          backgroundColor:'rgba(244,63,94,.75)', borderRadius:3, stack:'a' },
+        { label:'Qoldiq', data:eData.map(d=>Math.round(d.balance)),
+          type:'line', borderColor:'#00e5ff', backgroundColor:'rgba(0,229,255,.04)',
+          borderWidth:2, pointRadius:0, yAxisID:'y1', fill:true, tension:.4 }
+      ]
+    },
+    options: chartOptions()
+  });
+
+  document.getElementById('eligResults').classList.remove('hidden');
+  document.getElementById('emptyE').classList.add('hidden');
+  document.getElementById('eligResults').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+/* ─────────────── ENTER ─────────────── */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (document.getElementById('sec-schedule').classList.contains('active')) calcSchedule();
+    else calcEligibility();
+  }
+});
+
+/* ══════════════════════════════════════════
+   PWA — MANIFEST + SERVICE WORKER (inline)
+══════════════════════════════════════════ */
+
+// 1) SVG icon as data URL (cyan bank icon)
+const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="100" fill="#0a0e1a"/>
+  <rect x="60" y="220" width="392" height="200" rx="16" fill="#1a2235" stroke="#00e5ff" stroke-width="6"/>
+  <polygon points="256,60 60,220 452,220" fill="#7c3aed"/>
+  <rect x="110" y="260" width="60" height="120" rx="8" fill="#00e5ff"/>
+  <rect x="226" y="260" width="60" height="120" rx="8" fill="#00e5ff"/>
+  <rect x="342" y="260" width="60" height="120" rx="8" fill="#00e5ff"/>
+  <rect x="60" y="390" width="392" height="30" rx="8" fill="#00e5ff"/>
+</svg>`;
+const iconUrl = 'data:image/svg+xml;base64,' + btoa(iconSvg);
+
+// Set apple-touch-icon
+document.getElementById('apple-icon').href = iconUrl;
+
+// 2) Create manifest blob
+const manifest = {
+  name: "Kredit Kalkulyator",
+  short_name: "Kredit",
+  description: "Annuitet va differensial kredit grafigi",
+  start_url: "./",
+  display: "standalone",
+  background_color: "#0a0e1a",
+  theme_color: "#0a0e1a",
+  orientation: "portrait-primary",
+  icons: [
+    { src: iconUrl, sizes: "192x192", type: "image/svg+xml", purpose: "any maskable" },
+    { src: iconUrl, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
+  ]
+};
+const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+document.getElementById('pwa-manifest').href = URL.createObjectURL(manifestBlob);
+
+// 3) Service Worker (offline cache) — inline as blob
+const swCode = `
+const CACHE = 'kredit-v1';
+const ASSETS = [
+  self.location.pathname,
+  'https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;800&display=swap',
+  'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'
+];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS).catch(()=>{})));
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys =>
+    Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))
+  ));
+  self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(r => r || fetch(e.request).then(res => {
+      const clone = res.clone();
+      caches.open(CACHE).then(c => c.put(e.request, clone));
+      return res;
+    }).catch(() => caches.match(e.request)))
+  );
+});
+`;
+const swBlob = new Blob([swCode], { type: 'application/javascript' });
+const swUrl  = URL.createObjectURL(swBlob);
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+
+// 4) Install banner (iOS & Android)
+let deferredPrompt = null;
+
+// Install banner HTML
+const banner = document.createElement('div');
+banner.id = 'install-banner';
+banner.style.cssText = `
+  position:fixed;bottom:0;left:0;right:0;z-index:9999;
+  background:linear-gradient(135deg,#1a2235,#111827);
+  border-top:1px solid #1e293b;
+  padding:16px 20px;
+  display:none;
+  align-items:center;
+  gap:14px;
+  box-shadow:0 -8px 32px rgba(0,0,0,.4);
+  animation:slideUp .3s ease;
+`;
+banner.innerHTML = `
+  <style>@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}</style>
+  <img src="${iconUrl}" style="width:44px;height:44px;border-radius:10px;flex-shrink:0">
+  <div style="flex:1">
+    <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:2px">Kredit Kalkulyator</div>
+    <div style="font-size:11px;color:#64748b">Ilovani telefonga o'rnating — oflayn ishlaydi</div>
+  </div>
+  <button id="btn-install" style="
+    background:linear-gradient(135deg,#7c3aed,#00e5ff);border:none;border-radius:10px;
+    color:#fff;font-family:'Sora',sans-serif;font-size:13px;font-weight:700;
+    padding:10px 18px;cursor:pointer;white-space:nowrap;flex-shrink:0
+  ">O'rnatish</button>
+  <button id="btn-dismiss" style="
+    background:transparent;border:none;color:#64748b;font-size:20px;cursor:pointer;
+    line-height:1;padding:4px;flex-shrink:0
+  ">✕</button>
+`;
+document.body.appendChild(banner);
+
+// Android: beforeinstallprompt
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  banner.style.display = 'flex';
+});
+
+document.getElementById('btn-install').addEventListener('click', async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+  }
+  banner.style.display = 'none';
+});
+
+document.getElementById('btn-dismiss').addEventListener('click', () => {
+  banner.style.display = 'none';
+});
+
+// iOS: show manual instructions banner if not standalone
+const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.navigator.standalone;
+if (isIos && !isStandalone) {
+  setTimeout(() => {
+    banner.style.display = 'flex';
+    banner.querySelector('#btn-install').textContent = "Qanday o'rnatish?";
+    banner.querySelector('#btn-install').addEventListener('click', () => {
+      alert("📱 iPhone/iPad uchun:\n\n1. Safari brauzerida oching\n2. Pastdagi 'Ulashish' tugmasini bosing (□↑)\n3. 'Bosh ekranga qo'shish' ni tanlang\n4. 'Qo'shish' tugmasini bosing\n\nShundan so'ng ilova bosh ekranda paydo bo'ladi!");
+    }, { once: true });
+  }, 2000);
+}
+</script>
+</body>
+</html>
